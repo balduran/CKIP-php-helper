@@ -23,18 +23,20 @@ class CKIP{
 		$this->passwd = $passwd;
 		$this->serverip = $ip;
 		$this->serverport= $port;
-		$this->connect();
+		$this->sock = $this->connect();
 	}
-	function connect(){
+	private function connect(){
 		$addr='tcp://'.$this->serverip.':'.$this->serverport;
-		$this->sock = stream_socket_client($addr);
-		//stream_set_blocking ($this->sock,0);
+		return stream_socket_client($addr);
 
 	}
-	function disconnect(){
+	public function getsock(){
+		return $this->sock;
+	}
+	public function disconnect(){
 		if ($this->sock) fclose($this->sock);
 	}
-	function query($text){
+	public function query($text){
 		$head = <<<_HEADER_
 <?xml version="1.0" ?>
 <wordsegmentation version="0.1">
@@ -57,16 +59,18 @@ _FOOT_;
 			if (stream_socket_sendto($this->sock, $tempxml->asXML())){
 				do {
 					$ttt=stream_socket_recvfrom($this->sock, 65525);
+					$ttt = iconv('big5','utf-8',$ttt);
 					$resp[] = $ttt;
 				}while  (! simplexml_load_string( implode ($resp)));
-						$this->data_recv = html_entity_decode(implode($resp));
+						return $this->data_recv = html_entity_decode(implode($resp));
 			}
 			
 		}else{
 			$this->data_recv =0;
+			return null;
 		}
 	} 
-	function getTerm(){
+	public function getTerm(){
 		$term = Array();
 		$resp = $this->data_recv;
 		$resp = htmlspecialchars_decode($resp);
@@ -79,7 +83,6 @@ _FOOT_;
 					$line = (string)$line;
 
 					foreach(  split("　",$line) as $word){
-					//echo count($temp);
 						if ($word != ""){
 							preg_match("/(\S*)\((\S*)\)/",$word,$pos);
 							$t = new Term(strtolower($pos[1]),$pos[2]);
@@ -92,7 +95,7 @@ _FOOT_;
 			return $term;
 
 		}
-	function getSents(){
+	public function getSents(){
 
 		$sents = Array();
 		$resp = $this->data_recv;

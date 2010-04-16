@@ -1,0 +1,8 @@
+usage:
+
+require_once 'CKIP.php';
+$dummy = new CKIP( $server, $port, $username, $password);
+$dummy ->query( $querystring);
+$dummy ->getTerm();
+$dummy ->getSents();
+
